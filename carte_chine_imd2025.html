@@ -1,0 +1,451 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IMD Smart City Index 2025 — Villes chinoises</title>
+  <meta name="description" content="Carte interactive des villes chinoises dans le classement IMD Smart City Index 2025" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, #c0392b 0%, #8e1a10 50%, #1a0a08 100%);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      box-shadow: 0 2px 20px rgba(192,57,43,0.4);
+      z-index: 1000;
+      flex-shrink: 0;
+    }
+
+    .flag { font-size: 2rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+
+    .header-text h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #fff;
+    }
+    .header-text p {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.65);
+      margin-top: 2px;
+    }
+
+    .header-badges {
+      margin-left: auto;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .badge {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #fff;
+      backdrop-filter: blur(8px);
+    }
+
+    /* ── LAYOUT ── */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 310px;
+      background: #161b22;
+      border-right: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .sidebar-title {
+      padding: 16px 18px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #8b949e;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .city-list {
+      overflow-y: auto;
+      flex: 1;
+      padding: 8px;
+    }
+    .city-list::-webkit-scrollbar { width: 5px; }
+    .city-list::-webkit-scrollbar-track { background: transparent; }
+    .city-list::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+
+    .city-card {
+      background: #1c2128;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .city-card:hover { background: #21262d; border-color: #c0392b; transform: translateX(3px); }
+    .city-card.active { background: #1f1117; border-color: #c0392b; box-shadow: 0 0 12px rgba(192,57,43,0.3); }
+
+    .rank-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      color: #fff;
+    }
+    .rank-badge .rank-num { font-size: 1rem; line-height: 1; }
+
+    .city-info { flex: 1; min-width: 0; }
+    .city-info h3 { font-size: 0.95rem; font-weight: 600; color: #e6edf3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .city-info .meta { font-size: 0.72rem; color: #8b949e; margin-top: 3px; }
+
+    .grade-pill {
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* ── LEGEND ── */
+    .legend {
+      padding: 12px 16px;
+      border-top: 1px solid #30363d;
+      background: #0d1117;
+    }
+    .legend-title { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #8b949e; margin-bottom: 8px; }
+    .legend-items { display: flex; flex-wrap: wrap; gap: 6px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: #8b949e; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── MAP ── */
+    #map {
+      flex: 1;
+      z-index: 1;
+    }
+
+    /* ── CUSTOM MARKERS ── */
+    .custom-marker {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .marker-pin {
+      width: 44px;
+      height: 44px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      border: 2px solid rgba(255,255,255,0.3);
+      transition: transform 0.2s;
+    }
+    .marker-pin span {
+      transform: rotate(45deg);
+      font-weight: 700;
+      font-size: 0.75rem;
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+    }
+    .marker-shadow {
+      width: 14px;
+      height: 5px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 50%;
+      margin-top: 2px;
+      filter: blur(2px);
+    }
+
+    /* ── POPUP ── */
+    .leaflet-popup-content-wrapper {
+      background: #161b22 !important;
+      border: 1px solid #30363d !important;
+      border-radius: 14px !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+      padding: 0 !important;
+      overflow: hidden;
+    }
+    .leaflet-popup-tip { background: #161b22 !important; }
+    .leaflet-popup-content { margin: 0 !important; width: 240px !important; }
+    .leaflet-popup-close-button { color: #8b949e !important; right: 12px !important; top: 10px !important; font-size: 18px !important; }
+
+    .popup-header {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid #30363d;
+    }
+    .popup-header h3 { font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 700; color: #e6edf3; }
+    .popup-header .popup-country { font-size: 0.75rem; color: #8b949e; margin-top: 2px; font-family: 'Outfit', sans-serif; }
+
+    .popup-body { padding: 12px 16px; font-family: 'Outfit', sans-serif; }
+    .popup-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid #21262d;
+      font-size: 0.8rem;
+    }
+    .popup-row:last-child { border-bottom: none; }
+    .popup-row .label { color: #8b949e; }
+    .popup-row .value { font-weight: 600; color: #e6edf3; }
+
+    .popup-rank {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .popup-rank-num {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .popup-rank-label { font-size: 0.75rem; color: #8b949e; }
+
+    .trend-up { color: #3fb950 !important; }
+    .trend-down { color: #f85149 !important; }
+    .trend-new { color: #d29922 !important; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="flag">🇨🇳</div>
+  <div class="header-text">
+    <h1>IMD Smart City Index 2025 — Chine</h1>
+    <p>Localisation et performances des villes chinoises au classement mondial</p>
+  </div>
+  <div class="header-badges">
+    <div class="badge">🏙️ 9 villes</div>
+    <div class="badge">📊 IMD 2025</div>
+  </div>
+</header>
+
+<div class="main">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Villes classées</div>
+    <div class="city-list" id="cityList"></div>
+    <div class="legend">
+      <div class="legend-title">Note Smart City</div>
+      <div class="legend-items">
+        <div class="legend-item"><div class="legend-dot" style="background:#1a9850"></div> A</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#66bd63"></div> B+</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fdae61"></div> B</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f46d43"></div> C</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#d73027"></div> D</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Map -->
+  <div id="map"></div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// ── DONNÉES ──────────────────────────────────────────────────────────────────
+const cities = [
+  { id: 14, name: "Pékin",     country: "Chine",                    lat: 39.9042, lon: 116.4074, rank: 14, note: "A",  noteStruct: "A",  noteTech: "A",  rank2024: 25,  variation: 11  },
+  { id: 15, name: "Shanghai",  country: "Chine",                    lat: 31.2304, lon: 121.4737, rank: 15, note: "A",  noteStruct: "A",  noteTech: "A",  rank2024: 14,  variation: -1  },
+  { id: 19, name: "Hong Kong", country: "Hong Kong, Chine (SAR)",   lat: 22.3193, lon: 114.1694, rank: 19, note: "A",  noteStruct: "A",  noteTech: "A",  rank2024: 16,  variation: -3  },
+  { id: 50, name: "Shenzhen",  country: "Chine",                    lat: 22.5431, lon: 114.0579, rank: 50, note: "B+", noteStruct: "B+", noteTech: "A",  rank2024: 46,  variation: -4  },
+  { id: 54, name: "Hangzhou",  country: "Chine",                    lat: 30.2741, lon: 120.1551, rank: 54, note: "B+", noteStruct: "B+", noteTech: "B+", rank2024: 52,  variation: -2  },
+  { id: 55, name: "Guangzhou", country: "Chine",                    lat: 23.1291, lon: 113.2644, rank: 55, note: "B+", noteStruct: "B",  noteTech: "A",  rank2024: 53,  variation: -2  },
+  { id: 58, name: "Nankin",    country: "Chine",                    lat: 32.0603, lon: 118.7969, rank: 58, note: "B",  noteStruct: "B",  noteTech: "B+", rank2024: 60,  variation: 2   },
+  { id: 69, name: "Chongqing", country: "Chine",                    lat: 29.5630, lon: 106.5516, rank: 69, note: "B",  noteStruct: "B",  noteTech: "B",  rank2024: 71,  variation: 2   },
+  { id: 76, name: "Chengdu",   country: "Chine",                    lat: 30.5728, lon: 104.0668, rank: 76, note: "B",  noteStruct: "B",  noteTech: "B",  rank2024: 73,  variation: -3  },
+];
+
+// ── COULEURS PAR NOTE ─────────────────────────────────────────────────────────
+function noteColor(note) {
+  if (note === "A")  return "#1a9850";
+  if (note === "B+") return "#66bd63";
+  if (note === "B")  return "#fdae61";
+  if (note === "C")  return "#f46d43";
+  return "#d73027";
+}
+
+function noteGradeBg(note) {
+  const colors = { "A": "#1a985022", "B+": "#66bd6322", "B": "#fdae6122", "C": "#f46d4322" };
+  return colors[note] || "#d7302722";
+}
+
+function noteGradeBorder(note) {
+  return noteColor(note);
+}
+
+// ── INIT MAP ──────────────────────────────────────────────────────────────────
+const map = L.map('map', {
+  center: [30, 110],
+  zoom: 5,
+  zoomControl: true,
+});
+
+// Tuiles sombre style
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© <a href="https://carto.com/">CARTO</a> | IMD Smart City Index 2025',
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(map);
+
+// ── MARQUEURS & SIDEBAR ───────────────────────────────────────────────────────
+const markers = {};
+
+cities.forEach(city => {
+  const color = noteColor(city.note);
+
+  // Icône personnalisée
+  const icon = L.divIcon({
+    className: '',
+    html: `
+      <div class="custom-marker">
+        <div class="marker-pin" style="background: linear-gradient(135deg, ${color}, ${color}99);">
+          <span>#${city.rank}</span>
+        </div>
+        <div class="marker-shadow"></div>
+      </div>`,
+    iconSize: [48, 54],
+    iconAnchor: [24, 54],
+    popupAnchor: [0, -58],
+  });
+
+  // Popup
+  const varHtml = typeof city.variation === 'number'
+    ? (city.variation > 0
+        ? `<span class="trend-up">▲ +${city.variation}</span>`
+        : city.variation < 0
+          ? `<span class="trend-down">▼ ${city.variation}</span>`
+          : `<span style="color:#8b949e">= 0</span>`)
+    : `<span class="trend-new">Nouveau</span>`;
+
+  const popupHtml = `
+    <div class="popup-header" style="border-top: 3px solid ${color};">
+      <div class="popup-rank">
+        <span class="popup-rank-num" style="color:${color}">#${city.rank}</span>
+        <div>
+          <div style="font-size:0.7rem;color:#8b949e;">classement mondial</div>
+          <div style="margin-top:2px;">
+            <span class="grade-pill" style="background:${color}22;border:1px solid ${color};color:${color};padding:1px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;">${city.note}</span>
+          </div>
+        </div>
+      </div>
+      <h3>${city.name}</h3>
+      <div class="popup-country">🏳️ ${city.country}</div>
+    </div>
+    <div class="popup-body">
+      <div class="popup-row">
+        <span class="label">Structure</span>
+        <span class="value" style="color:${noteColor(city.noteStruct)}">${city.noteStruct}</span>
+      </div>
+      <div class="popup-row">
+        <span class="label">Technologie</span>
+        <span class="value" style="color:${noteColor(city.noteTech)}">${city.noteTech}</span>
+      </div>
+      <div class="popup-row">
+        <span class="label">Rang 2024</span>
+        <span class="value">#${city.rank2024}</span>
+      </div>
+      <div class="popup-row">
+        <span class="label">Évolution</span>
+        <span class="value">${varHtml}</span>
+      </div>
+      <div class="popup-row">
+        <span class="label">Coordonnées</span>
+        <span class="value" style="font-size:0.72rem;">${city.lat.toFixed(3)}, ${city.lon.toFixed(3)}</span>
+      </div>
+    </div>`;
+
+  const marker = L.marker([city.lat, city.lon], { icon })
+    .addTo(map)
+    .bindPopup(popupHtml, { maxWidth: 260 });
+
+  markers[city.id] = marker;
+
+  // Sidebar card
+  const card = document.createElement('div');
+  card.className = 'city-card';
+  card.id = `card-${city.id}`;
+  card.innerHTML = `
+    <div class="rank-badge" style="background: linear-gradient(135deg, ${color}33, ${color}11); border: 1px solid ${color}55;">
+      <span class="rank-num" style="color:${color}">#${city.rank}</span>
+    </div>
+    <div class="city-info">
+      <h3>${city.name}</h3>
+      <div class="meta">Rang 2024 : #${city.rank2024} ${typeof city.variation === 'number' && city.variation > 0 ? '▲' : city.variation < 0 ? '▼' : '='} ${Math.abs(city.variation)}</div>
+    </div>
+    <span class="grade-pill" style="background:${color}22; border:1px solid ${color}; color:${color};">${city.note}</span>`;
+
+  card.addEventListener('click', () => {
+    map.setView([city.lat, city.lon], 8, { animate: true, duration: 0.8 });
+    marker.openPopup();
+    document.querySelectorAll('.city-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+  });
+
+  document.getElementById('cityList').appendChild(card);
+
+  // Sync popup → sidebar
+  marker.on('popupopen', () => {
+    document.querySelectorAll('.city-card').forEach(c => c.classList.remove('active'));
+    document.getElementById(`card-${city.id}`)?.classList.add('active');
+  });
+});
+
+// ── FIT MAP TO MARKERS ────────────────────────────────────────────────────────
+const lats = cities.map(c => c.lat);
+const lons = cities.map(c => c.lon);
+map.fitBounds([
+  [Math.min(...lats) - 2, Math.min(...lons) - 2],
+  [Math.max(...lats) + 2, Math.max(...lons) + 2]
+]);
+</script>
+</body>
+</html>
+Pressing key...Stopping...
+
+Stop Agent
