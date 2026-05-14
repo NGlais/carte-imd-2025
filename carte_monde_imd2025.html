@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>IMD Smart City Index 2025 — Classement Mondial</title>
+<meta name="description" content="Carte interactive du classement IMD Smart City Index 2025 - 146 villes mondiales"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:#0d1117;color:#e6edf3;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:linear-gradient(135deg,#1f4068,#162447,#0d1117);padding:12px 24px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 20px rgba(31,64,104,0.5);z-index:1000;flex-shrink:0}
+.header-text h1{font-size:1.15rem;font-weight:700;color:#fff}
+.header-text p{font-size:0.75rem;color:rgba(255,255,255,0.6);margin-top:2px}
+.badges{margin-left:auto;display:flex;gap:8px}
+.badge{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:3px 12px;font-size:0.75rem;color:#fff}
+.main{display:flex;flex:1;overflow:hidden}
+.sidebar{width:290px;background:#161b22;border-right:1px solid #30363d;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.sidebar-title{padding:12px 16px 8px;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.12em;color:#8b949e;border-bottom:1px solid #30363d;display:flex;justify-content:space-between;align-items:center}
+.search-box{padding:8px;border-bottom:1px solid #30363d}
+.search-box input{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:6px 10px;color:#e6edf3;font-family:'Outfit',sans-serif;font-size:0.8rem;outline:none}
+.search-box input:focus{border-color:#1f4068}
+.city-list{overflow-y:auto;flex:1;padding:6px}
+.city-list::-webkit-scrollbar{width:4px}
+.city-list::-webkit-scrollbar-thumb{background:#30363d;border-radius:4px}
+.city-card{background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:9px 12px;margin-bottom:6px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:10px}
+.city-card:hover{background:#21262d;border-color:#1f4068;transform:translateX(2px)}
+.city-card.active{background:#0d1f3c;border-color:#1f6feb;box-shadow:0 0 10px rgba(31,111,235,0.2)}
+.rank-b{width:38px;height:38px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.rank-b .rn{font-size:0.85rem;font-weight:700;line-height:1}
+.city-info{flex:1;min-width:0}
+.city-info h3{font-size:0.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.city-info .meta{font-size:0.68rem;color:#8b949e;margin-top:2px}
+.gp{padding:2px 8px;border-radius:12px;font-size:0.68rem;font-weight:700;flex-shrink:0}
+.legend{padding:10px 14px;border-top:1px solid #30363d;background:#0d1117}
+.legend-title{font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#8b949e;margin-bottom:6px}
+.legend-items{display:flex;flex-wrap:wrap;gap:6px}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:0.68rem;color:#8b949e}
+.ldot{width:9px;height:9px;border-radius:50%}
+#map{flex:1;z-index:1}
+.leaflet-popup-content-wrapper{background:#161b22!important;border:1px solid #30363d!important;border-radius:12px!important;box-shadow:0 8px 32px rgba(0,0,0,0.6)!important;padding:0!important;overflow:hidden}
+.leaflet-popup-tip{background:#161b22!important}
+.leaflet-popup-content{margin:0!important;width:230px!important;font-family:'Outfit',sans-serif}
+.leaflet-popup-close-button{color:#8b949e!important;right:10px!important;top:8px!important}
+.ph{padding:12px 14px 8px;border-bottom:1px solid #30363d}
+.ph h3{font-size:1rem;font-weight:700;color:#e6edf3}
+.ph .pc{font-size:0.72rem;color:#8b949e;margin-top:1px}
+.pb{padding:10px 14px}
+.pr{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #21262d;font-size:0.78rem}
+.pr:last-child{border-bottom:none}
+.pr .lb{color:#8b949e}
+.pr .vl{font-weight:600}
+.prank{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.prank .prn{font-size:1.8rem;font-weight:700;line-height:1}
+.tu{color:#3fb950!important}.td{color:#f85149!important}.tn{color:#d29922!important}
+</style>
+</head>
+<body>
+<header>
+  <div>🌍</div>
+  <div class="header-text">
+    <h1>IMD Smart City Index 2025 — Classement Mondial</h1>
+    <p>146 villes classées selon leur performance Smart City</p>
+  </div>
+  <div class="badges">
+    <div class="badge">🏙️ 146 villes</div>
+    <div class="badge">📊 IMD 2025</div>
+  </div>
+</header>
+<div class="main">
+  <aside class="sidebar">
+    <div class="sidebar-title"><span>Villes classées</span><span id="count" style="color:#8b949e;font-weight:400">146</span></div>
+    <div class="search-box"><input id="search" placeholder="🔍 Rechercher une ville..." oninput="filterCities()"/></div>
+    <div class="city-list" id="cityList"></div>
+    <div class="legend">
+      <div class="legend-title">Note Smart City</div>
+      <div class="legend-items">
+        <div class="legend-item"><div class="ldot" style="background:#1a9850"></div>A</div>
+        <div class="legend-item"><div class="ldot" style="background:#66bd63"></div>B+</div>
+        <div class="legend-item"><div class="ldot" style="background:#fdae61"></div>B</div>
+        <div class="legend-item"><div class="ldot" style="background:#f46d43"></div>C</div>
+        <div class="legend-item"><div class="ldot" style="background:#d73027"></div>D</div>
+      </div>
+    </div>
+  </aside>
+  <div id="map"></div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const CITIES = [{"rank": 1, "name": "Zurich", "country": "Suisse", "lat": 47.3769, "lon": 8.5417, "note": "AAA", "noteS": "AAA", "noteT": "AAA", "r2024": "1", "var": "0"}, {"rank": 2, "name": "Oslo", "country": "Norvège", "lat": 59.9139, "lon": 10.7522, "note": "AAA", "noteS": "AAA", "noteT": "AAA", "r2024": "2", "var": "0"}, {"rank": 3, "name": "Genève", "country": "Suisse", "lat": 46.2044, "lon": 6.1432, "note": "AAA", "noteS": "AAA", "noteT": "AAA", "r2024": "4", "var": "1"}, {"rank": 4, "name": "Dubaï", "country": "Émirats Arabes Unis", "lat": 25.2048, "lon": 55.2708, "note": "A", "noteS": "A", "noteT": "A", "r2024": "12", "var": "8"}, {"rank": 5, "name": "Abou Dabi", "country": "Émirats Arabes Unis", "lat": 24.4539, "lon": 54.3773, "note": "A", "noteS": "A", "noteT": "A", "r2024": "10", "var": "5"}, {"rank": 6, "name": "Londres", "country": "Royaume-Uni", "lat": 51.5074, "lon": -0.1278, "note": "AA", "noteS": "AAA", "noteT": "AAA", "r2024": "8", "var": "2"}, {"rank": 7, "name": "Copenhague", "country": "Danemark", "lat": 55.6761, "lon": 12.5683, "note": "AAA", "noteS": "AAA", "noteT": "AA", "r2024": "6", "var": "-1"}, {"rank": 8, "name": "Canberra", "country": "Australie", "lat": -35.2809, "lon": 149.13, "note": "AAA", "noteS": "AAA", "noteT": "A", "r2024": "3", "var": "-5"}, {"rank": 9, "name": "Singapour", "country": "Singapour", "lat": 1.3521, "lon": 103.8198, "note": "AAA", "noteS": "AAA", "noteT": "AAA", "r2024": "5", "var": "-4"}, {"rank": 10, "name": "Lausanne", "country": "Suisse", "lat": 46.5197, "lon": 6.6323, "note": "AAA", "noteS": "AA", "noteT": "AA", "r2024": "7", "var": "-3"}, {"rank": 11, "name": "Helsinki", "country": "Finlande", "lat": 60.1699, "lon": 24.9384, "note": "AA", "noteS": "AA", "noteT": "AA", "r2024": "9", "var": "-2"}, {"rank": 12, "name": "Prague", "country": "République Tchèque", "lat": 50.0755, "lon": 14.4378, "note": "AA", "noteS": "AA", "noteT": "AA", "r2024": "15", "var": "3"}, {"rank": 13, "name": "Séoul", "country": "Corée du Sud", "lat": 37.5665, "lon": 126.978, "note": "BBB", "noteS": "AA", "noteT": "AAA", "r2024": "17", "var": "4"}, {"rank": 14, "name": "Pékin", "country": "Chine", "lat": 39.9042, "lon": 116.4074, "note": "BB", "noteS": "BB", "noteT": "BB", "r2024": "13", "var": "-1"}, {"rank": 15, "name": "Shanghai", "country": "Chine", "lat": 31.2304, "lon": 121.4737, "note": "BB", "noteS": "BB", "noteT": "BB", "r2024": "19", "var": "4"}, {"rank": 16, "name": "Ljubljana", "country": "Slovénie", "lat": 46.0569, "lon": 14.5058, "note": "AA", "noteS": "AA", "noteT": "AA", "r2024": "32", "var": "16"}, {"rank": 17, "name": "Amsterdam", "country": "Pays-Bas", "lat": 52.3676, "lon": 4.9041, "note": "A", "noteS": "AA", "noteT": "AA", "r2024": "18", "var": "1"}, {"rank": 18, "name": "Stockholm", "country": "Suède", "lat": 59.3293, "lon": 18.0686, "note": "AA", "noteS": "AA", "noteT": "A", "r2024": "11", "var": "-7"}, {"rank": 19, "name": "Hong Kong", "country": "Hong Kong, Chine (SAR)", "lat": 22.3193, "lon": 114.1694, "note": "BBB", "noteS": "A", "noteT": "AAA", "r2024": "20", "var": "1"}, {"rank": 20, "name": "Hambourg", "country": "Allemagne", "lat": 53.5753, "lon": 10.0153, "note": "AA", "noteS": "A", "noteT": "BBB", "r2024": "14", "var": "-6"}, {"rank": 21, "name": "Reykjavik", "country": "Islande", "lat": 64.1466, "lon": -21.9426, "note": "AA", "noteS": "A", "noteT": "A", "r2024": "26", "var": "5"}, {"rank": 22, "name": "Tallinn", "country": "Estonie", "lat": 59.437, "lon": 24.7536, "note": "A", "noteS": "A", "noteT": "A", "r2024": "24", "var": "2"}, {"rank": 23, "name": "Taipei City", "country": "Taïwan", "lat": 25.033, "lon": 121.5654, "note": "A", "noteS": "A", "noteT": "A", "r2024": "16", "var": "-7"}, {"rank": 24, "name": "Munich", "country": "Allemagne", "lat": 48.1351, "lon": 11.582, "note": "A", "noteS": "A", "noteT": "A", "r2024": "21", "var": "-3"}, {"rank": 25, "name": "Auckland", "country": "Nouvelle-Zélande", "lat": -36.8509, "lon": 174.7645, "note": "A", "noteS": "A", "noteT": "AA", "r2024": "31", "var": "6"}, {"rank": 26, "name": "Vienne", "country": "Autriche", "lat": 48.2082, "lon": 16.3738, "note": "A", "noteS": "A", "noteT": "A", "r2024": "23", "var": "-3"}, {"rank": 27, "name": "Riyad", "country": "Arabie Saoudite", "lat": 24.7136, "lon": 46.6753, "note": "BB", "noteS": "BB", "noteT": "BB", "r2024": "25", "var": "-2"}, {"rank": 28, "name": "Varsovie", "country": "Pologne", "lat": 52.2297, "lon": 21.0122, "note": "BBB", "noteS": "A", "noteT": "A", "r2024": "38", "var": "10"}, {"rank": 29, "name": "Bilbao", "country": "Espagne", "lat": 43.263, "lon": -2.935, "note": "A", "noteS": "A", "noteT": "BBB", "r2024": "29", "var": "0"}, {"rank": 30, "name": "Wellington", "country": "Nouvelle-Zélande", "lat": -41.2866, "lon": 174.7756, "note": "A", "noteS": "A", "noteT": "BB", "r2024": "28", "var": "-2"}, {"rank": 31, "name": "Luxembourg", "country": "Luxembourg", "lat": 49.6116, "lon": 6.1319, "note": "A", "noteS": "A", "noteT": "BBB", "r2024": "27", "var": "-4"}, {"rank": 32, "name": "Sydney", "country": "Australie", "lat": -33.8688, "lon": 151.2093, "note": "A", "noteS": "A", "noteT": "A", "r2024": "22", "var": "-10"}, {"rank": 33, "name": "Doha", "country": "Qatar", "lat": 25.2854, "lon": 51.531, "note": "BB", "noteS": "BB", "noteT": "BB", "r2024": "48", "var": "15"}, {"rank": 34, "name": "Vilnius", "country": "Lituanie", "lat": 54.6872, "lon": 25.2797, "note": "BBB", "noteS": "A", "noteT": "A", "r2024": "47", "var": "13"}, {"rank": 35, "name": "Boston", "country": "États-Unis", "lat": 42.3601, "lon": -71.0589, "note": "A", "noteS": "BBB", "noteT": "BBB", "r2024": "36", "var": "1"}, {"rank": 36, "name": "Manama", "country": "Bahreïn", "lat": 26.2235, "lon": 50.5876, "note": "BB", "noteS": "BB", "noteT": "BB", "r2024": "NEW", "var": "Nouveau"}, {"rank": 37, "name": "Berlin", "country": "Allemagne", "lat": 52.52, "lon": 13.405, "note": "A", "noteS": "BBB", "noteT": "BBB", "r2024": "37", "var": "0"}, {"rank": 38, "name": "Madrid", "country": "Espagne", "lat": 40.4168, "lon": -3.7038, "note": "BB", "noteS": "BBB", "noteT": "A", "r2024": "35", "var": "-3"}, {"rank": 39, "name": "La Mecque", "country": "Arabie Saoudite", "lat": 21.3891, "lon": 39.8579, "note": "BB", "noteS": "BB", "noteT": "BB", "r2024": "52", "var": "13"}, {"rank": 40, "name": "Göteborg", "country": "Suède", "lat": 57.7089, "lon": 11.9746, "note": "BBB", "noteS": "BBB", "noteT": "BB", "r2024": "39", "var": "-1"}, {"rank": 41, "name": "Rotterdam", "country": "Pays-Bas", "lat": 51.9244, "lon": 4.4777, "note": "BB", "noteS": "BBB", "noteT": "BBB", "r2024": "41", "var": "0"}, {"rank": 42, "name": "Ottawa", "country": "Canada", "lat": 45.4215, "lon": -75.6972, "note": "A", "noteS": "BBB", "noteT": "B", "r2024": "46", "var": "4"}, {"rank": 43, "name": "La Haye", "country": "Pays-Bas", "lat": 52.0705, "lon": 4.3007, "note": "BBB", "noteS": "BBB", "noteT": "BBB", "r2024": "42", "var": "-1"}, {"rank": 44, "name": "Melbourne", "country": "Australie", "lat": -37.8136, "lon": 144.9631, "note": "BBB", "noteS": "BBB", "noteT": "BB", "r2024": "33", "var": "-11"}, {"rank": 45, "name": "Düsseldorf", "country": "Allemagne", "lat": 51.2217, "lon": 6.7762, "note": "BBB", "noteS": "BBB", "noteT": "BB", "r2024": "44", "var": "-1"}, {"rank": 46, "name": "Riga", "country": "Lettonie", "lat": 56.9496, "lon": 24.1052, "note": "BBB", "noteS": "BBB", "noteT": "BBB", "r2024": "59", "var": "13"}, {"rank": 47, "name": "Djeddah", "country": "Arabie Saoudite", "lat": 21.4858, "lon": 39.1925, "note": "B", "noteS": "BB", "noteT": "BB", "r2024": "55", "var": "8"}, {"rank": 48, "name": "Bruxelles", "country": "Belgique", "lat": 50.8503, "lon": 4.3517, "note": "BB", "noteS": "BBB", "noteT": "A", "r2024": "40", "var": "-8"}, {"rank": 49, "name": "New York", "country": "États-Unis", "lat": 40.7128, "lon": -74.006, "note": "BB", "noteS": "BBB", "noteT": "BBB", "r2024": "34", "var": "-15"}, {"rank": 50, "name": "Shenzhen", "country": "Chine", "lat": 22.5431, "lon": 114.0579, "note": "CCC", "noteS": "CCC", "noteT": "CCC", "r2024": "60", "var": "10"}, {"rank": 51, "name": "Brisbane", "country": "Australie", "lat": -27.4698, "lon": 153.0251, "note": "BBB", "noteS": "BBB", "noteT": "BB", "r2024": "30", "var": "-21"}, {"rank": 52, "name": "Saragosse", "country": "Espagne", "lat": 41.6561, "lon": -0.8773, "note": "BBB", "noteS": "BBB", "noteT": "BBB", "r2024": "57", "var": "5"}, {"rank": 53, "name": "Vancouver", "country": "Canada", "lat": 49.2827, "lon": -123.1207, "note": "BBB", "noteS": "BB", "noteT": "BB", "r2024": "43", "var": "-10"}, {"rank": 54, "name": "Hangzhou", "country": "Chine", "lat": 30.2741, "lon": 120.1551, "note": "CCC", "noteS": "CCC", "noteT": "CCC", "r2024": "64", "var": "10"}, {"rank": 55, "name": "Guangzhou", "country": "Chine", "lat": 23.1291, "lon": 113.2644, "note": "CCC", "noteS": "CCC", "noteT": "CCC", "r2024": "65", "var": "10"}, {"rank": 56, "name": "Seattle", "country": "États-Unis", "lat": 47.6062, "lon": -122.3321, "note": "BBB", "noteS": "BB", "noteT": "BB", "r2024": "63", "var": "7"}, {"rank": 57, "name": "Bratislava", "country": "Slovaquie", "lat": 48.1486, "lon": 17.1077, "note": "BB", "noteS": "BB", "noteT": "BBB", "r2024": "56", "var": "-1"}, {"rank": 58, "name": "Nankin", "country": "Chine", "lat": 32.0603, "lon": 118.7969, "note": "B", "noteS": "B", "noteT": "B", "r2024": "62", "var": "4"}, {"rank": 59, "name": "Hanovre", "country": "Allemagne", "lat": 52.3759, "lon": 9.732, "note": "A", "noteS": "BBB", "noteT": "B", "r2024": "53", "var": "-6"}, {"rank": 60, "name": "Busan", "country": "Corée du Sud", "lat": 35.1796, "lon": 129.0756, "note": "B", "noteS": "BB", "noteT": "A", "r2024": "45", "var": "-15"}, {"rank": 61, "name": "Al-Khobar", "country": "Arabie Saoudite", "lat": 26.2172, "lon": 50.1971, "note": "B", "noteS": "B", "noteT": "B", "r2024": "99", "var": "38"}, {"rank": 62, "name": "Washington D.C.", "country": "États-Unis", "lat": 38.9072, "lon": -77.0369, "note": "BB", "noteS": "BB", "noteT": "BB", "r2024": "50", "var": "-12"}, {"rank": 63, "name": "Toronto", "country": "Canada", "lat": 43.6532, "lon": -79.3832, "note": "BBB", "noteS": "BB", "noteT": "BB", "r2024": "51", "var": "-12"}, {"rank": 64, "name": "Manchester", "country": "Royaume-Uni", "lat": 53.4808, "lon": -2.2426, "note": "BB", "noteS": "BB", "noteT": "BBB", "r2024": "71", "var": "7"}, {"rank": 65, "name": "Kuala Lumpur", "country": "Malaisie", "lat": 3.139, "lon": 101.6869, "note": "B", "noteS": "B", "noteT": "B", "r2024": "73", "var": "8"}, {"rank": 66, "name": "Dublin", "country": "Irlande", "lat": 53.3498, "lon": -6.2603, "note": "BB", "noteS": "BB", "noteT": "BBB", "r2024": "69", "var": "3"}, {"rank": 67, "name": "Médine", "country": "Arabie Saoudite", "lat": 24.5247, "lon": 39.5692, "note": "CCC", "noteS": "B", "noteT": "B", "r2024": "74", "var": "7"}, {"rank": 68, "name": "Denver", "country": "États-Unis", "lat": 39.7392, "lon": -104.9903, "note": "BB", "noteS": "BB", "noteT": "BB", "r2024": "66", "var": "-2"}, {"rank": 69, "name": "Chongqing", "country": "Chine", "lat": 29.563, "lon": 106.5516, "note": "CCC", "noteS": "CCC", "noteT": "CCC", "r2024": "82", "var": "13"}, {"rank": 70, "name": "Cracovie", "country": "Pologne", "lat": 50.0647, "lon": 19.945, "note": "B", "noteS": "B", "noteT": "B", "r2024": "76", "var": "6"}, {"rank": 71, "name": "Paris", "country": "France", "lat": 48.8566, "lon": 2.3522, "note": "BB", "noteS": "BB", "noteT": "A", "r2024": "49", "var": "-22"}, {"rank": 72, "name": "Leeds", "country": "Royaume-Uni", "lat": 53.8008, "lon": -1.5491, "note": "BB", "noteS": "BB", "noteT": "B", "r2024": "72", "var": "0"}, {"rank": 73, "name": "Lyon", "country": "France", "lat": 45.764, "lon": 4.8357, "note": "B", "noteS": "BB", "noteT": "BB", "r2024": "61", "var": "-12"}, {"rank": 74, "name": "Kiel", "country": "Allemagne", "lat": 54.3233, "lon": 10.1228, "note": "BBB", "noteS": "BB", "noteT": "CCC", "r2024": "79", "var": "5"}, {"rank": 75, "name": "Newcastle", "country": "Royaume-Uni", "lat": 54.9783, "lon": -1.6178, "note": "BB", "noteS": "B", "noteT": "CCC", "r2024": "77", "var": "2"}, {"rank": 76, "name": "Chengdu", "country": "Chine", "lat": 30.5728, "lon": 104.0668, "note": "CCC", "noteS": "CCC", "noteT": "CCC", "r2024": "93", "var": "17"}, {"rank": 77, "name": "Bordeaux", "country": "France", "lat": 44.8378, "lon": -0.5792, "note": "B", "noteS": "B", "noteT": "CCC", "r2024": "70", "var": "-7"}, {"rank": 78, "name": "Bucarest", "country": "Roumanie", "lat": 44.4268, "lon": 26.1025, "note": "CCC", "noteS": "BB", "noteT": "BBB", "r2024": "100", "var": "22"}, {"rank": 79, "name": "Chicago", "country": "États-Unis", "lat": 41.8781, "lon": -87.6298, "note": "B", "noteS": "BB", "noteT": "BB", "r2024": "67", "var": "-12"}, {"rank": 80, "name": "Birmingham", "country": "Royaume-Uni", "lat": 52.4862, "lon": -1.8904, "note": "B", "noteS": "B", "noteT": "B", "r2024": "83", "var": "3"}, {"rank": 81, "name": "Montréal", "country": "Canada", "lat": 45.5017, "lon": -73.5673, "note": "BB", "noteS": "B", "noteT": "CCC", "r2024": "80", "var": "-1"}, {"rank": 82, "name": "San Francisco", "country": "États-Unis", "lat": 37.7749, "lon": -122.4194, "note": "BB", "noteS": "B", "noteT": "B", "r2024": "75", "var": "-7"}, {"rank": 83, "name": "Bologne", "country": "Italie", "lat": 44.4949, "lon": 11.3426, "note": "BB", "noteS": "B", "noteT": "B", "r2024": "78", "var": "-5"}, {"rank": 84, "name": "Budapest", "country": "Hongrie", "lat": 47.4979, "lon": 19.0402, "note": "CCC", "noteS": "B", "noteT": "BBB", "r2024": "89", "var": "5"}, {"rank": 85, "name": "Zagreb", "country": "Croatie", "lat": 45.815, "lon": 15.9819, "note": "B", "noteS": "B", "noteT": "B", "r2024": "102", "var": "17"}, {"rank": 86, "name": "Bangkok", "country": "Thaïlande", "lat": 13.7563, "lon": 100.5018, "note": "CC", "noteS": "CCC", "noteT": "B", "r2024": "84", "var": "-2"}, {"rank": 87, "name": "Mascate", "country": "Oman", "lat": 23.588, "lon": 58.3829, "note": "CCC", "noteS": "CCC", "noteT": "CCC", "r2024": "88", "var": "1"}, {"rank": 88, "name": "Hanoï", "country": "Vietnam", "lat": 21.0285, "lon": 105.8542, "note": "CCC", "noteS": "CCC", "noteT": "CCC", "r2024": "97", "var": "9"}, {"rank": 89, "name": "Cardiff", "country": "Royaume-Uni", "lat": 51.4816, "lon": -3.1791, "note": "B", "noteS": "CCC", "noteT": "CC", "r2024": "92", "var": "3"}, {"rank": 90, "name": "Koweït City", "country": "Koweït", "lat": 29.3759, "lon": 47.9774, "note": "CCC", "noteS": "CCC", "noteT": "B", "r2024": "NEW", "var": "Nouveau"}, {"rank": 91, "name": "Los Angeles", "country": "États-Unis", "lat": 34.0522, "lon": -118.2437, "note": "B", "noteS": "B", "noteT": "BB", "r2024": "68", "var": "-23"}, {"rank": 92, "name": "Barcelone", "country": "Espagne", "lat": 41.3851, "lon": 2.1734, "note": "CCC", "noteS": "B", "noteT": "BB", "r2024": "81", "var": "-11"}, {"rank": 93, "name": "Lille", "country": "France", "lat": 50.6292, "lon": 3.0573, "note": "CCC", "noteS": "CCC", "noteT": "CCC", "r2024": "85", "var": "-8"}, {"rank": 94, "name": "Belfast", "country": "Royaume-Uni", "lat": 54.5973, "lon": -5.9301, "note": "CCC", "noteS": "CCC", "noteT": "CC", "r2024": "101", "var": "7"}, {"rank": 95, "name": "Glasgow", "country": "Royaume-Uni", "lat": 55.8642, "lon": -4.2518, "note": "B", "noteS": "CCC", "noteT": "CCC", "r2024": "87", "var": "-8"}, {"rank": 96, "name": "Tel Aviv", "country": "Israël", "lat": 32.0853, "lon": 34.7818, "note": "B", "noteS": "CCC", "noteT": "B", "r2024": "94", "var": "-2"}, {"rank": 97, "name": "Milan", "country": "Italie", "lat": 45.4654, "lon": 9.1859, "note": "CCC", "noteS": "CCC", "noteT": "BB", "r2024": "91", "var": "-6"}, {"rank": 98, "name": "Ankara", "country": "Turquie", "lat": 39.9334, "lon": 32.8597, "note": "CCC", "noteS": "CCC", "noteT": "CCC", "r2024": "96", "var": "-2"}, {"rank": 99, "name": "Osaka", "country": "Japon", "lat": 34.6937, "lon": 135.5023, "note": "BB", "noteS": "CCC", "noteT": "CCC", "r2024": "95", "var": "-4"}, {"rank": 100, "name": "Philadelphie", "country": "États-Unis", "lat": 39.9526, "lon": -75.1652, "note": "CCC", "noteS": "CCC", "noteT": "CCC", "r2024": "90", "var": "-10"}, {"rank": 101, "name": "Hô Chi Minh-Ville", "country": "Vietnam", "lat": 10.8231, "lon": 106.6297, "note": "CCC", "noteS": "CCC", "noteT": "CC", "r2024": "105", "var": "4"}, {"rank": 102, "name": "Astana", "country": "Kazakhstan", "lat": 51.1801, "lon": 71.446, "note": "CC", "noteS": "CC", "noteT": "CCC", "r2024": "NEW", "var": "Nouveau"}, {"rank": 103, "name": "Jakarta", "country": "Indonésie", "lat": -6.2088, "lon": 106.8456, "note": "CC", "noteS": "CCC", "noteT": "CCC", "r2024": "103", "var": "0"}, {"rank": 104, "name": "Delhi", "country": "Inde", "lat": 28.6139, "lon": 77.209, "note": "CC", "noteS": "CC", "noteT": "CCC", "r2024": "106", "var": "2"}, {"rank": 105, "name": "Phoenix", "country": "États-Unis", "lat": 33.4484, "lon": -112.074, "note": "CCC", "noteS": "CC", "noteT": "C", "r2024": "98", "var": "-7"}, {"rank": 106, "name": "Bombay", "country": "Inde", "lat": 19.076, "lon": 72.8777, "note": "CC", "noteS": "CC", "noteT": "CC", "r2024": "107", "var": "1"}, {"rank": 107, "name": "Marseille", "country": "France", "lat": 43.2965, "lon": 5.3698, "note": "CCC", "noteS": "CCC", "noteT": "CCC", "r2024": "104", "var": "-3"}, {"rank": 108, "name": "Tokyo", "country": "Japon", "lat": 35.6762, "lon": 139.6503, "note": "BB", "noteS": "BB", "noteT": "BB", "r2024": "86", "var": "-22"}, {"rank": 109, "name": "Hyderabad", "country": "Inde", "lat": 17.385, "lon": 78.4867, "note": "CCC", "noteS": "CC", "noteT": "CC", "r2024": "111", "var": "2"}, {"rank": 110, "name": "Bangalore", "country": "Inde", "lat": 12.9716, "lon": 77.5946, "note": "CC", "noteS": "CC", "noteT": "CC", "r2024": "109", "var": "-1"}, {"rank": 111, "name": "Istanbul", "country": "Turquie", "lat": 41.0082, "lon": 28.9784, "note": "C", "noteS": "CC", "noteT": "CCC", "r2024": "110", "var": "-1"}, {"rank": 112, "name": "AlUla", "country": "Arabie Saoudite", "lat": 26.6209, "lon": 37.9227, "note": "CC", "noteS": "CC", "noteT": "CC", "r2024": "NEW", "var": "Nouveau"}, {"rank": 113, "name": "Medan", "country": "Indonésie", "lat": 3.5952, "lon": 98.6722, "note": "CC", "noteS": "CC", "noteT": "CC", "r2024": "112", "var": "-1"}, {"rank": 114, "name": "Makassar", "country": "Indonésie", "lat": -5.1477, "lon": 119.4327, "note": "CC", "noteS": "CC", "noteT": "CC", "r2024": "115", "var": "1"}, {"rank": 115, "name": "Lisbonne", "country": "Portugal", "lat": 38.7223, "lon": -9.1393, "note": "CC", "noteS": "CC", "noteT": "CC", "r2024": "108", "var": "-7"}, {"rank": 116, "name": "Islamabad", "country": "Pakistan", "lat": 33.6844, "lon": 73.0479, "note": "CC", "noteS": "CC", "noteT": "CC", "r2024": "116", "var": "0"}, {"rank": 117, "name": "Le Caire", "country": "Égypte", "lat": 30.0444, "lon": 31.2357, "note": "C", "noteS": "CC", "noteT": "CC", "r2024": "114", "var": "-3"}, {"rank": 118, "name": "Medellín", "country": "Colombie", "lat": 6.2442, "lon": -75.5812, "note": "CC", "noteS": "CC", "noteT": "CC", "r2024": "119", "var": "1"}, {"rank": 119, "name": "Mexico City", "country": "Mexique", "lat": 19.4326, "lon": -99.1332, "note": "C", "noteS": "CC", "noteT": "CC", "r2024": "122", "var": "3"}, {"rank": 120, "name": "Santiago", "country": "Chili", "lat": -33.4489, "lon": -70.6693, "note": "C", "noteS": "CC", "noteT": "CC", "r2024": "117", "var": "-3"}, {"rank": 121, "name": "Sofia", "country": "Bulgarie", "lat": 42.6977, "lon": 23.3219, "note": "CC", "noteS": "C", "noteT": "CC", "r2024": "113", "var": "-8"}, {"rank": 122, "name": "Nicosie", "country": "Chypre", "lat": 35.1856, "lon": 33.3823, "note": "CC", "noteS": "C", "noteT": "C", "r2024": "118", "var": "-4"}, {"rank": 123, "name": "Rabat", "country": "Maroc", "lat": 34.0209, "lon": -6.8416, "note": "CC", "noteS": "C", "noteT": "C", "r2024": "126", "var": "3"}, {"rank": 124, "name": "Le Cap", "country": "Afrique du Sud", "lat": -33.9249, "lon": 18.4241, "note": "C", "noteS": "C", "noteT": "C", "r2024": "129", "var": "5"}, {"rank": 125, "name": "Manille", "country": "Philippines", "lat": 14.5995, "lon": 120.9842, "note": "C", "noteS": "C", "noteT": "C", "r2024": "121", "var": "-4"}, {"rank": 126, "name": "San José", "country": "Costa Rica", "lat": 9.9281, "lon": -84.0907, "note": "CC", "noteS": "C", "noteT": "C", "r2024": "125", "var": "-1"}, {"rank": 127, "name": "Amman", "country": "Jordanie", "lat": 31.9454, "lon": 35.9284, "note": "C", "noteS": "C", "noteT": "C", "r2024": "128", "var": "1"}, {"rank": 128, "name": "Alger", "country": "Algérie", "lat": 36.7372, "lon": 3.0862, "note": "C", "noteS": "C", "noteT": "C", "r2024": "124", "var": "-4"}, {"rank": 129, "name": "Athènes", "country": "Grèce", "lat": 37.9838, "lon": 23.7275, "note": "CCC", "noteS": "CCC", "noteT": "CCC", "r2024": "120", "var": "-9"}, {"rank": 130, "name": "Brasilia", "country": "Brésil", "lat": -15.7942, "lon": -47.8822, "note": "C", "noteS": "C", "noteT": "C", "r2024": "130", "var": "0"}, {"rank": 131, "name": "Buenos Aires", "country": "Argentine", "lat": -34.6037, "lon": -58.3816, "note": "C", "noteS": "C", "noteT": "C", "r2024": "123", "var": "-8"}, {"rank": 132, "name": "San Juan", "country": "Porto Rico", "lat": 18.4655, "lon": -66.1057, "note": "C", "noteS": "C", "noteT": "C", "r2024": "NEW", "var": "Nouveau"}, {"rank": 133, "name": "Abuja", "country": "Nigeria", "lat": 9.0765, "lon": 7.3986, "note": "C", "noteS": "C", "noteT": "D", "r2024": "135", "var": "2"}, {"rank": 134, "name": "Bogota", "country": "Colombie", "lat": 4.711, "lon": -74.0721, "note": "C", "noteS": "C", "noteT": "C", "r2024": "127", "var": "-7"}, {"rank": 135, "name": "Lagos", "country": "Nigeria", "lat": 6.5244, "lon": 3.3792, "note": "C", "noteS": "C", "noteT": "D", "r2024": "136", "var": "1"}, {"rank": 136, "name": "Nairobi", "country": "Kenya", "lat": -1.2921, "lon": 36.8219, "note": "D", "noteS": "D", "noteT": "C", "r2024": "131", "var": "-5"}, {"rank": 137, "name": "Sao Paulo", "country": "Brésil", "lat": -23.5505, "lon": -46.6333, "note": "D", "noteS": "D", "noteT": "C", "r2024": "132", "var": "-5"}, {"rank": 138, "name": "Lima", "country": "Pérou", "lat": -12.0464, "lon": -77.0428, "note": "C", "noteS": "C", "noteT": "C", "r2024": "134", "var": "-4"}, {"rank": 139, "name": "Rome", "country": "Italie", "lat": 41.9028, "lon": 12.4964, "note": "CCC", "noteS": "CCC", "noteT": "CCC", "r2024": "133", "var": "-6"}, {"rank": 140, "name": "Caracas", "country": "Venezuela", "lat": 10.4806, "lon": -66.9036, "note": "D", "noteS": "D", "noteT": "D", "r2024": "NEW", "var": "Nouveau"}, {"rank": 141, "name": "Accra", "country": "Ghana", "lat": 5.6037, "lon": -0.187, "note": "D", "noteS": "D", "noteT": "D", "r2024": "138", "var": "-3"}, {"rank": 142, "name": "Tunis", "country": "Tunisie", "lat": 36.8065, "lon": 10.1815, "note": "D", "noteS": "D", "noteT": "D", "r2024": "137", "var": "-5"}, {"rank": 143, "name": "Beyrouth", "country": "Liban", "lat": 33.8938, "lon": 35.5018, "note": "D", "noteS": "D", "noteT": "D", "r2024": "140", "var": "-3"}, {"rank": 144, "name": "Guatemala City", "country": "Guatemala", "lat": 14.6349, "lon": -90.5069, "note": "D", "noteS": "D", "noteT": "D", "r2024": "142", "var": "-2"}, {"rank": 145, "name": "Sanaa", "country": "Yémen", "lat": 15.3694, "lon": 44.191, "note": "D", "noteS": "D", "noteT": "D", "r2024": "141", "var": "-4"}, {"rank": 146, "name": "Rio de Janeiro", "country": "Brésil", "lat": -22.9068, "lon": -43.1729, "note": "D", "noteS": "D", "noteT": "D", "r2024": "139", "var": "-7"}];
+
+function noteColor(n){
+  if(n==='A') return '#1a9850';
+  if(n==='B+') return '#66bd63';
+  if(n==='B') return '#fdae61';
+  if(n==='C') return '#f46d43';
+  return '#d73027';
+}
+
+const map = L.map('map',{center:[20,10],zoom:2});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'© CARTO | IMD Smart City Index 2025',subdomains:'abcd',maxZoom:19
+}).addTo(map);
+
+const markers = {};
+
+function varHtml(v){
+  const n = Number(v);
+  if(v==='Nouveau'||v==='NEW') return '<span class="tn">Nouveau</span>';
+  if(!isNaN(n) && n>0) return '<span class="tu">▲ +'+n+'</span>';
+  if(!isNaN(n) && n<0) return '<span class="td">▼ '+n+'</span>';
+  return '<span style="color:#8b949e">= 0</span>';
+}
+
+CITIES.forEach(city => {
+  const col = noteColor(city.note);
+  const icon = L.divIcon({
+    className:'',
+    html:`<div style="display:flex;flex-direction:column;align-items:center">
+      <div style="width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:linear-gradient(135deg,${col},${col}99);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.4);border:1.5px solid rgba(255,255,255,0.25)">
+        <span style="transform:rotate(45deg);font-weight:700;font-size:0.62rem;color:#fff;font-family:Outfit,sans-serif">#${city.rank}</span>
+      </div>
+      <div style="width:10px;height:4px;background:rgba(0,0,0,0.25);border-radius:50%;filter:blur(1px);margin-top:1px"></div>
+    </div>`,
+    iconSize:[38,44],iconAnchor:[19,44],popupAnchor:[0,-48]
+  });
+
+  const popup = `<div class="ph" style="border-top:3px solid ${col}">
+    <div class="prank"><span class="prn" style="color:${col}">#${city.rank}</span>
+      <div><div style="font-size:0.65rem;color:#8b949e">classement mondial</div>
+      <span class="gp" style="background:${col}22;border:1px solid ${col};color:${col}">${city.note}</span></div>
+    </div>
+    <h3>${city.name}</h3><div class="pc">🏳️ ${city.country}</div>
+  </div>
+  <div class="pb">
+    <div class="pr"><span class="lb">Structure</span><span class="vl" style="color:${noteColor(city.noteS)}">${city.noteS}</span></div>
+    <div class="pr"><span class="lb">Technologie</span><span class="vl" style="color:${noteColor(city.noteT)}">${city.noteT}</span></div>
+    <div class="pr"><span class="lb">Rang 2024</span><span class="vl">#${city.r2024}</span></div>
+    <div class="pr"><span class="lb">Évolution</span><span class="vl">${varHtml(city.var)}</span></div>
+  </div>`;
+
+  const mk = L.marker([city.lat,city.lon],{icon}).addTo(map).bindPopup(popup,{maxWidth:250});
+  markers[city.rank] = {marker:mk, city};
+  mk.on('popupopen',()=>{
+    document.querySelectorAll('.city-card').forEach(c=>c.classList.remove('active'));
+    const el=document.getElementById('card-'+city.rank);
+    if(el){el.classList.add('active');el.scrollIntoView({block:'nearest'})}
+  });
+});
+
+function buildList(filtered){
+  const list = document.getElementById('cityList');
+  list.innerHTML='';
+  document.getElementById('count').textContent = filtered.length;
+  filtered.forEach(city=>{
+    const col=noteColor(city.note);
+    const vn=Number(city.var);
+    const varStr=city.var==='Nouveau'||city.var==='NEW'?'Nouveau':(!isNaN(vn)&&vn>0?'▲ +'+vn:!isNaN(vn)&&vn<0?'▼ '+vn:'= 0');
+    const card=document.createElement('div');
+    card.className='city-card'; card.id='card-'+city.rank;
+    card.innerHTML=`<div class="rank-b" style="background:${col}22;border:1px solid ${col}55">
+      <span class="rn" style="color:${col}">#${city.rank}</span>
+    </div>
+    <div class="city-info"><h3>${city.name}</h3><div class="meta">${city.country} · 2024: #${city.r2024} ${varStr}</div></div>
+    <span class="gp" style="background:${col}22;border:1px solid ${col};color:${col}">${city.note}</span>`;
+    card.addEventListener('click',()=>{
+      map.setView([city.lat,city.lon],8,{animate:true,duration:0.8});
+      markers[city.rank].marker.openPopup();
+      document.querySelectorAll('.city-card').forEach(c=>c.classList.remove('active'));
+      card.classList.add('active');
+    });
+    list.appendChild(card);
+  });
+}
+
+function filterCities(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const filtered=CITIES.filter(c=>c.name.toLowerCase().includes(q)||c.country.toLowerCase().includes(q));
+  buildList(filtered);
+}
+
+buildList(CITIES);
+</script>
+</body>
+</html>
